@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<head>
+  <title>AI-lloween</title>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta property="og:description" content="The spookiest AI tool that dresses you up for Halloween">
+  <meta property="og:image" content="share.png">
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Rubik">
+  <link href="style.css" rel="stylesheet">
+  <link href="welcome.css" rel="stylesheet">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <style>
+  </style>
+</head>
+<body>
+<div id="main-area">
+  <img src="img/logo.svg" alt="AI-lloween" id="logo">
+  <h3 id="sub-header">
+      The spooky AI tool<br>
+      that dresses you up for Halloween
+  </h3>
+  <button id="start-btn" class="welcome-button" onclick="location.href='chatbot.html';">Let's get spooked!</button>
+  <button id="overlay-btn">What's this?</button>
+</div>
+<div class="overlay" id="overlay">
+    <h1>Hi there</h1>
+    <p>
+      <b>AI-llowen</b> is an AI tool that shows you how you look in different Halloween costumes.<br>
+      It uses the latest and most advanced cutting edge technolagies, combining your dashing faces with brilliant costumes.<br><br>
+      The process is very simple:<br>
+      1. Upload a photo of your face (don't worry, we don't save the images. We couldn't care less about them).<br>
+      2. Pick a your desired costume.<br>
+      3. Sit back and enjoy the result. Or stand. It's a free website.<br>
+      <br>
+      Who's behind this thingy?<br>
+      A weird man named <b>Gil Cohen</b>.<br>
+      He is a designer, artist, actor and just a guy who likes to address himself in third person. He thinks it makes him sound important. It doesn't. And he's not.<br>
+      <br>
+      Other projects he was involved in:<br>
+      <a href="https://treenderapp.com"><b>Treender</b></a>
+      - The first dating app for trees (in English and Hebrew)<br>
+<a href="https://knesset.run"><b>Knesset-run</b></a>
+      - A game where Israeli politicions run for the parlament (in Hebrew).
+    </p>
+    <button id="close-btn">Ok bye</button>
+</div>
+<script>
+  // JavaScript to handle the overlay
+  const overlayBtn = document.getElementById('overlay-btn');
+  const overlay = document.getElementById('overlay');
+  const closeBtn = document.getElementById('close-btn');
+
+  overlayBtn.addEventListener('click', function() {
+    overlay.style.display = 'flex';
+  });
+
+  closeBtn.addEventListener('click', function() {
+    overlay.style.display = 'none';
+  });
+</script>
+</body>
+</html>
