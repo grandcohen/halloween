@@ -380,7 +380,7 @@ function initPage() {
 initPage();
 
 const textPostImageResult = ['Great, the photo was uploaded successfully.',
-  "HAHAHA!! Do you like it?? Oh god, I can't breath. You should've seen your face!!",
+  "HAHAHA!! Do you like it?? I can't believe you thought I'd waste my time on you. You should've seen your face!!",
   "We're you expecting a different outcome?! BAHAHA!!", "Fool you once, shame on you. Fool you so many times, are you ok?",
   "Oh ok, so it's some sort of an addiction",
   "Are we becoming besties?",
