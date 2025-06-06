@@ -7,13 +7,8 @@ let isRefImageLoaded = false;
 let isUploadedImageLoaded = false;
 
 window.addEventListener('load', event => {
-  // Clear any existing data
-  try {
-    localStorage.removeItem('userPhoto');
-    localStorage.removeItem('selectedCostume');
-  } catch (e) {
-    console.log('localStorage not available');
-  }
+  localStorage.removeItem('userPhoto');
+  localStorage.removeItem('selectedCostume');
 });
 
 function showImageResults() {
@@ -41,11 +36,13 @@ function showImageResults() {
   }
 
   setTimeout(function () {
+
     conversation.appendChild(messagePreImageDone);
     conversation.scrollTop = conversation.scrollHeight;
 
     setTimeout(function () {
-      // Reset loading flags
+      // create div for when pic didnt finish to upload
+
       isRefImageLoaded = false;
       isUploadedImageLoaded = false;
 
@@ -56,105 +53,123 @@ function showImageResults() {
       conversation.appendChild(chatbotResponse);
       conversation.scrollTop = conversation.scrollHeight;
 
-      console.log('Starting image load process');
+      console.log('1');
       
-      // Get user photo from localStorage
+      // Check if user photo exists in localStorage
       const userPhotoData = localStorage.getItem('userPhoto');
       if (!userPhotoData) {
-        showErrorAndRetry(chatbotResponse, messageWhileLoading, 'No photo found. Please try uploading again.');
+        chatbotResponse.removeChild(messageWhileLoading);
+        const errorMsg = document.createElement('div');
+        errorMsg.textContent = 'Photo not found. Please upload again.';
+        errorMsg.classList.add('error-message');
+        chatbotResponse.appendChild(errorMsg);
+        
+        const retryButton = document.createElement('button');
+        retryButton.textContent = 'Upload photo again';
+        retryButton.addEventListener('click', () => {
+          conversation.removeChild(chatbotResponse);
+          showUploadButton();
+        });
+        chatbotResponse.appendChild(retryButton);
         return;
       }
-
-      // Create uploaded image element
+      
+      // uploaded
       const imgElement = document.createElement('img');
       imgElement.classList.add('user-image-' + selectedCostume);
-      imgElement.style.maxWidth = '100%'; // Prevent overflow
-      
-      // Create reference image element
+      imgElement.src = userPhotoData;
+
+      // our image
       const refElement = document.createElement('img');
       refElement.classList.add('reference-image');
       refElement.src = 'img/' + selectedCostume + '.jpg';
-      refElement.style.maxWidth = '100%'; // Prevent overflow
 
       // Add error handlers for both images
       refElement.onerror = () => {
-        console.error('Reference image failed to load');
-        showErrorAndRetry(chatbotResponse, messageWhileLoading, 'Costume image failed to load. Please try again.');
+        console.error('Failed to load reference image');
+        chatbotResponse.removeChild(messageWhileLoading);
+        const errorMsg = document.createElement('div');
+        errorMsg.textContent = 'Failed to load costume image. Please try again.';
+        errorMsg.classList.add('error-message');
+        chatbotResponse.appendChild(errorMsg);
+        
+        const retryButton = document.createElement('button');
+        retryButton.textContent = 'Try again';
+        retryButton.addEventListener('click', () => {
+          conversation.removeChild(chatbotResponse);
+          showCostumeOptions();
+        });
+        chatbotResponse.appendChild(retryButton);
       };
 
       imgElement.onerror = () => {
-        console.error('User image failed to load');
-        showErrorAndRetry(chatbotResponse, messageWhileLoading, 'Your photo failed to load. Please try uploading again.');
+        console.error('Failed to load user image');
+        chatbotResponse.removeChild(messageWhileLoading);
+        const errorMsg = document.createElement('div');
+        errorMsg.textContent = 'Failed to process your photo. Please upload again.';
+        errorMsg.classList.add('error-message');
+        chatbotResponse.appendChild(errorMsg);
+        
+        const retryButton = document.createElement('button');
+        retryButton.textContent = 'Upload photo again';
+        retryButton.addEventListener('click', () => {
+          conversation.removeChild(chatbotResponse);
+          showUploadButton();
+        });
+        chatbotResponse.appendChild(retryButton);
       };
 
-      // Set up load handlers
-      refElement.onload = () => {
-        console.log('Reference image loaded successfully');
+      refElement.onload  = () => {
+        console.log('2 refElement true')
         isRefImageLoaded = true;
-        checkAndShowResults(refElement, imgElement, messageWhileLoading, chatbotResponse);
-      };
+        showReallyTheResults(refElement,imgElement,messageWhileLoading,chatbotResponse);
+      }
 
-      imgElement.onload = () => {
-        console.log('User image loaded successfully');
+      imgElement.onload  = () => {
+        console.log('2 imgElement true')
         isUploadedImageLoaded = true;
-        checkAndShowResults(refElement, imgElement, messageWhileLoading, chatbotResponse);
-      };
+        showReallyTheResults(refElement,imgElement,messageWhileLoading,chatbotResponse);
+      }
 
-      // Set the user image source last to trigger loading
-      imgElement.src = userPhotoData;
-
-    }, TIMEOUT + TIMEOUT);
+    }, TIMEOUT+TIMEOUT);
   }, TIMEOUT);
 }
 
-function checkAndShowResults(refImage, uploadedImage, messageWhileLoading, chatbotResponse) {
+function showReallyTheResults(refImage, uploadedImage, messageWhileLoading, chatbotResponse) {
   // Add a timeout to prevent infinite waiting
   const loadingTimeout = setTimeout(() => {
     if (!isRefImageLoaded || !isUploadedImageLoaded) {
-      console.log('Loading timeout - ref:', isRefImageLoaded, 'uploaded:', isUploadedImageLoaded);
-      showErrorAndRetry(chatbotResponse, messageWhileLoading, 'Images took too long to load. Please try again.');
+      if (messageWhileLoading.parentNode) {
+        chatbotResponse.removeChild(messageWhileLoading);
+      }
+      const errorMsg = document.createElement('div');
+      errorMsg.textContent = 'Upload failed. Please try again.';
+      errorMsg.classList.add('error-message');
+      chatbotResponse.appendChild(errorMsg);
+      
+      // Add a retry button
+      const retryButton = document.createElement('button');
+      retryButton.textContent = 'Try again';
+      retryButton.addEventListener('click', () => {
+        conversation.removeChild(chatbotResponse);
+        showCostumeOptions();
+      });
+      chatbotResponse.appendChild(retryButton);
     }
-  }, 15000); // 15 second timeout (increased from 10)
+  }, 10000); // 10 second timeout
   
   if (isRefImageLoaded && isUploadedImageLoaded) {
     clearTimeout(loadingTimeout);
-    
-    // Remove loading message first
+    chatbotResponse.appendChild(refImage);
+    chatbotResponse.appendChild(uploadedImage);
     if (messageWhileLoading.parentNode) {
       chatbotResponse.removeChild(messageWhileLoading);
     }
-    
-    // Add images
-    chatbotResponse.appendChild(refImage);
-    chatbotResponse.appendChild(uploadedImage);
-    
     conversation.scrollTop = conversation.scrollHeight;
-    
     setTimeout(function() {
       showCostumeOptions();
     }, TIMEOUT);
   }
-}
-
-function showErrorAndRetry(chatbotResponse, messageWhileLoading, errorText) {
-  // Remove loading message
-  if (messageWhileLoading.parentNode) {
-    chatbotResponse.removeChild(messageWhileLoading);
-  }
-  
-  const errorMsg = document.createElement('div');
-  errorMsg.textContent = errorText;
-  errorMsg.classList.add('error-message');
-  chatbotResponse.appendChild(errorMsg);
-  
-  // Add a retry button
-  const retryButton = document.createElement('button');
-  retryButton.textContent = 'Try again';
-  retryButton.addEventListener('click', () => {
-    conversation.removeChild(chatbotResponse);
-    showCostumeOptions();
-  });
-  chatbotResponse.appendChild(retryButton);
 }
 
 function showCostumeOptions() {
@@ -193,57 +208,142 @@ function showCostumeOptions() {
       const messageCotumesButtons = document.createElement('div');
       messageCotumesButtons.classList.add('message', 'chatbot', 'button-message');
 
-      // Create costume buttons
-      const costumes = [
-        { name: 'Harry Potter', key: 'hp', listener: 'listenerHP' },
-        { name: 'Cowboy', key: 'cowboy', listener: 'listenerCowboy' },
-        { name: 'Witch', key: 'witch', listener: 'listenerWitch' },
-        { name: 'Wonder woman', key: 'wonder', listener: 'listenerWonder' },
-        { name: 'Fairy', key: 'fairy', listener: 'listenerFairy' },
-        { name: 'Mad hatter', key: 'madhat', listener: 'listenerMadhat' },
-        { name: 'Pirate', key: 'pirate', listener: 'listenerPirate' },
-        { name: 'Batman', key: 'batman', listener: 'listenerBatman' }
-      ];
+      ////////////////////////// ADD LISTENERS //////////////////////////
 
-      const buttons = {};
-      const listeners = {};
+      const chatLine1 = document.createElement('div');
+      const chatLine2 = document.createElement('div');
+      const chatLine3 = document.createElement('div');
+      chatLine1.classList.add('line');
+      chatLine2.classList.add('line');
 
-      costumes.forEach(costume => {
-        const button = document.createElement('button');
-        button.textContent = costume.name;
-        
-        // Add classes based on costume
-        if (['Cowboy', 'Fairy', 'Mad hatter'].includes(costume.name)) {
-          button.classList.add('line', 'button-more');
-        } else if (['Harry Potter'].includes(costume.name)) {
-          button.classList.add('line');
-        } else if (['Witch', 'Batman'].includes(costume.name)) {
-          button.classList.add('button-more');
-        }
+      // HP
+      const hpButton = document.createElement('button');
+      hpButton.textContent = 'Harry Potter';
+      hpButton.classList.add('line');
+      hpButton.addEventListener('click', listenerHP);
+      messageCotumesButtons.appendChild(hpButton);
 
-        // Create listener function
-        listeners[costume.key] = async function() {
-          button.classList.add('clicked');
-          selectedCostume = costume.key;
-          removeListnersForCostumes();
-          await showImageResults();
-        };
+      // Cowboy
+      const cowboyButton = document.createElement('button');
+      cowboyButton.textContent = 'Cowboy';
+      cowboyButton.classList.add('line','button-more');
+      cowboyButton.addEventListener('click', listenerCowboy);
+      messageCotumesButtons.appendChild(cowboyButton);
 
-        button.addEventListener('click', listeners[costume.key]);
-        buttons[costume.key] = button;
-        messageCotumesButtons.appendChild(button);
-      });
+      // Witch
+      const witchButton = document.createElement('button');
+      witchButton.textContent = 'Witch';
+    witchButton.classList.add('button-more');
+      witchButton.addEventListener('click', listenerWitch);
+      messageCotumesButtons.appendChild(witchButton);
+
+      // Wonder
+      const wonderButton = document.createElement('button');
+      wonderButton.textContent = 'Wonder woman';
+      wonderButton.addEventListener('click', listenerWonder);
+      messageCotumesButtons.appendChild(wonderButton);
+
+      // Fairy
+      const fairyButton = document.createElement('button');
+      fairyButton.textContent = 'Fairy';
+      fairyButton.classList.add('line','button-more');
+      fairyButton.addEventListener('click', listenerFairy);
+      messageCotumesButtons.appendChild(fairyButton);
+
+      // Madhat
+      const madhatButton = document.createElement('button');
+      madhatButton.textContent = 'Mad hatter';
+      madhatButton.classList.add('line','button-more');
+      madhatButton.addEventListener('click', listenerMadhat);
+      messageCotumesButtons.appendChild(madhatButton);
+
+      // Pirate
+      const pirateButton = document.createElement('button');
+      pirateButton.textContent = 'Pirate';
+      pirateButton.addEventListener('click', listenerPirate);
+      messageCotumesButtons.appendChild(pirateButton);
+
+      // Batman
+      const batmanButton = document.createElement('button');
+      batmanButton.textContent = 'Batman';
+    batmanButton.classList.add('button-more');
+      batmanButton.addEventListener('click', listenerBatman);
+      messageCotumesButtons.appendChild(batmanButton);
 
       conversation.appendChild(messageCotumesButtons);
       conversation.scrollTop = conversation.scrollHeight;
 
+      ////////////////////////// LISTEN FUNCTIONS //////////////////////////
+
+      async function listenerBatman() {
+        selectedCostume = 'batman';
+        batmanButton.classList.add('clicked')
+        removeListnersForCostumes();
+        await showImageResults();
+      };
+
+      async function listenerCowboy() {
+        cowboyButton.classList.add('clicked')
+        selectedCostume = 'cowboy';
+        removeListnersForCostumes();
+        await showImageResults();
+      }
+
+      async function listenerFairy() {
+        fairyButton.classList.add('clicked')
+        selectedCostume = 'fairy';
+        removeListnersForCostumes();
+        await showImageResults();
+      }
+
+      async function listenerHP() {
+        hpButton.classList.add('clicked')
+        selectedCostume = 'hp';
+        removeListnersForCostumes();
+        await showImageResults();
+      }
+
+      async function listenerMadhat() {
+        madhatButton.classList.add('clicked')
+        selectedCostume = 'madhat';
+        removeListnersForCostumes();
+        await showImageResults();
+      }
+
+      async function listenerPirate() {
+        pirateButton.classList.add('clicked')
+        selectedCostume = 'pirate';
+        removeListnersForCostumes();
+        await showImageResults();
+      }
+
+      async function listenerWitch() {
+        witchButton.classList.add('clicked')
+        selectedCostume = 'witch';
+        removeListnersForCostumes();
+        await showImageResults();
+      }
+
+      async function listenerWonder() {
+        wonderButton.classList.add('clicked')
+        selectedCostume = 'wonder';
+        removeListnersForCostumes();
+        await showImageResults();
+      }
+
       function removeListnersForCostumes() {
-        Object.keys(listeners).forEach(key => {
-          buttons[key].removeEventListener('click', listeners[key]);
-        });
+        batmanButton.removeEventListener('click', listenerBatman);
+        cowboyButton.removeEventListener('click', listenerCowboy);
+        fairyButton.removeEventListener('click', listenerFairy);
+        hpButton.removeEventListener('click', listenerHP);
+        madhatButton.removeEventListener('click', listenerMadhat);
+        pirateButton.removeEventListener('click', listenerPirate);
+        witchButton.removeEventListener('click', listenerWitch);
+        wonderButton.removeEventListener('click', listenerWonder);
       }
     }, TIMEOUT);
-  }, TIMEOUT);
+  }, TIMEOUT); // Beginning
+
 }
 
 function showUploadButton() {
@@ -267,166 +367,138 @@ function showUploadButton() {
   messageUploadButton.classList.add('message', 'chatbot','button-message');
   const uploadButton = document.createElement('button');
   uploadButton.textContent = 'Upload photo';
-  
-  let isProcessing = false; // Prevent multiple uploads
-  
   uploadButton.addEventListener('click', function handleFileUpload() {
-    if (isProcessing) return;
-    
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = 'image/*';
-    // Better mobile support
-    fileInput.setAttribute('capture', 'environment');
-    
-    fileInput.addEventListener('change', handleFileSelect);
-    fileInput.click();
+      const fileInput = document.createElement('input');
+      fileInput.type = 'file';
+      fileInput.accept = 'image/*';
+      fileInput.addEventListener('change', handleFileSelect);
+      fileInput.click();
 
-    function handleFileSelect(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-      
-      if (!file.type.match('image.*')) {
-        showErrorMessage('Please select a valid image file.');
-        return;
+      // Add image compression before setting to localStorage
+      function handleFileSelect(event) {
+        const file = event.target.files[0];
+        if (file && file.type.match('image.*')) {
+          // Show loading indicator
+          const loadingMessage = document.createElement('div');
+          loadingMessage.classList.add('message', 'chatbot');
+          loadingMessage.textContent = 'Processing photo...';
+          conversation.appendChild(loadingMessage);
+          conversation.scrollTop = conversation.scrollHeight;
+          
+          // Compress and resize image before storing
+          compressImage(file, function(dataUrl) {
+            if (dataUrl) {
+              localStorage.setItem('userPhoto', dataUrl);
+              // Remove loading indicator
+              if (loadingMessage.parentNode) {
+                conversation.removeChild(loadingMessage);
+              }
+              uploadButton.removeEventListener('click', handleFileUpload);
+              setTimeout(function() {
+                showCostumeOptions();
+              }, TIMEOUT);
+            } else {
+              // Handle compression error
+              if (loadingMessage.parentNode) {
+                conversation.removeChild(loadingMessage);
+              }
+              const errorMessage = document.createElement('div');
+              errorMessage.classList.add('message', 'chatbot');
+              errorMessage.textContent = 'Failed to process the image. Please try again with a different photo.';
+              conversation.appendChild(errorMessage);
+              conversation.scrollTop = conversation.scrollHeight;
+            }
+          });
+        } else {
+          // Show error message if file isn't an image
+          const errorMessage = document.createElement('div');
+          errorMessage.classList.add('message', 'chatbot');
+          errorMessage.textContent = 'There was an error. Please make sure you are selecting a photo and try again';
+          conversation.appendChild(errorMessage);
+          conversation.scrollTop = conversation.scrollHeight;
+        }
       }
-      
-      // Check file size (limit to 10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        showErrorMessage('Image is too large. Please select a smaller image (under 10MB).');
-        return;
-      }
-      
-      isProcessing = true;
-      uploadButton.textContent = 'Processing...';
-      uploadButton.disabled = true;
-      
-      // Show loading indicator
-      const loadingMessage = document.createElement('div');
-      loadingMessage.classList.add('message', 'chatbot');
-      loadingMessage.textContent = 'Processing photo...';
-      conversation.appendChild(loadingMessage);
-      conversation.scrollTop = conversation.scrollHeight;
-      
-      // Compress and resize image before storing
-      compressImage(file, function(dataUrl, error) {
-        // Remove loading indicator
-        if (loadingMessage.parentNode) {
-          conversation.removeChild(loadingMessage);
-        }
-        
-        if (error) {
-          showErrorMessage('Failed to process image. Please try again.');
-          resetUploadButton();
-          return;
-        }
-        
-        try {
-          localStorage.setItem('userPhoto', dataUrl);
-          uploadButton.removeEventListener('click', handleFileUpload);
-          setTimeout(function() {
-            showCostumeOptions();
-          }, TIMEOUT);
-        } catch (e) {
-          showErrorMessage('Failed to save image. Please try again.');
-          resetUploadButton();
-        }
-      });
-    }
-    
-    function showErrorMessage(message) {
-      const errorMessage = document.createElement('div');
-      errorMessage.classList.add('message', 'chatbot');
-      errorMessage.textContent = message;
-      conversation.appendChild(errorMessage);
-      conversation.scrollTop = conversation.scrollHeight;
-    }
-    
-    function resetUploadButton() {
-      isProcessing = false;
-      uploadButton.textContent = 'Upload photo';
-      uploadButton.disabled = false;
-    }
-  });
+    console.log('end of showUploadButton');
+});
 
   messageUploadButton.appendChild(uploadButton);
   conversation.appendChild(messageUploadButton);
   conversation.scrollTop = conversation.scrollHeight;
 }
 
-// Improved image compression function
+// Add this new function to compress images
 function compressImage(file, callback) {
-  const reader = new FileReader();
-  
-  reader.onload = function(event) {
-    const img = new Image();
-    
-    img.onload = function() {
+  try {
+    const reader = new FileReader();
+    reader.onload = function(event) {
       try {
-        // Create canvas to resize image
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        img.onload = function() {
+          try {
+            // Create canvas to resize image
+            const canvas = document.createElement('canvas');
+            // Determine size - limit to max 800px width/height
+            let width = img.width;
+            let height = img.height;
+            const maxSize = 800;
+            
+            if (width > height && width > maxSize) {
+              height = (height / width) * maxSize;
+              width = maxSize;
+            } else if (height > maxSize) {
+              width = (width / height) * maxSize;
+              height = maxSize;
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+            
+            // Draw and compress image
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // Get reduced-size data URL (0.8 quality)
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+            callback(dataUrl);
+          } catch (error) {
+            console.error('Canvas processing error:', error);
+            callback(null);
+          }
+        };
         
-        // Determine size - limit to max 800px width/height
-        let { width, height } = img;
-        const maxSize = 800;
+        img.onerror = function() {
+          console.error('Image load error');
+          callback(null);
+        };
         
-        if (width > height && width > maxSize) {
-          height = (height / width) * maxSize;
-          width = maxSize;
-        } else if (height > maxSize) {
-          width = (width / height) * maxSize;
-          height = maxSize;
-        }
-        
-        canvas.width = width;
-        canvas.height = height;
-        
-        // Draw image with proper orientation handling
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(0, 0, width, height);
-        ctx.drawImage(img, 0, 0, width, height);
-        
-        // Get compressed data URL
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-        
-        // Check if compression was successful
-        if (dataUrl.length < 50) {
-          callback(null, 'Compression failed');
-          return;
-        }
-        
-        callback(dataUrl);
+        img.src = event.target.result;
       } catch (error) {
-        console.error('Canvas error:', error);
-        callback(null, 'Image processing failed');
+        console.error('Image creation error:', error);
+        callback(null);
       }
     };
     
-    img.onerror = function() {
-      console.error('Image load error');
-      callback(null, 'Image load failed');
+    reader.onerror = function() {
+      console.error('File read error');
+      callback(null);
     };
     
-    img.src = event.target.result;
-  };
-  
-  reader.onerror = function() {
-    console.error('FileReader error');
-    callback(null, 'File read failed');
-  };
-  
-  reader.readAsDataURL(file);
+    reader.readAsDataURL(file);
+  } catch (error) {
+    console.error('Compression function error:', error);
+    callback(null);
+  }
 }
 
 function initPage() {
-  const messageHello = document.createElement('div');
-  messageHello.classList.add('message', 'chatbot');
-  messageHello.textContent = 'Hello there';
-  conversation.appendChild(messageHello);
-  conversation.scrollTop = conversation.scrollHeight;
+    const messageHello = document.createElement('div');
+    messageHello.classList.add('message', 'chatbot');
+    messageHello.textContent = 'Hello there';
+    conversation.appendChild(messageHello);
+    conversation.scrollTop = conversation.scrollHeight;
 
   setTimeout(function() {
+
     const messageWhoAmI = document.createElement('div');
     messageWhoAmI.classList.add('message', 'chatbot');
     const messageWhoAmI1 = document.createElement('p');
@@ -439,6 +511,7 @@ function initPage() {
     conversation.scrollTop = conversation.scrollHeight;
 
     setTimeout(function () {
+
       const messageHowDoes = document.createElement('div');
       messageHowDoes.classList.add('message', 'chatbot');
       const messageHowDoes1 = document.createElement('p');
@@ -450,7 +523,7 @@ function initPage() {
       conversation.appendChild(messageHowDoes);
       conversation.scrollTop = conversation.scrollHeight;
 
-      setTimeout(function () {
+      setTimeout(  function () {
         showUploadButton();
       }, TIMEOUT);
     }, TIMEOUT);
