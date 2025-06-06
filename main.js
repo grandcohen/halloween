@@ -371,12 +371,38 @@ function showUploadButton() {
       const fileInput = document.createElement('input');
       fileInput.type = 'file';
       fileInput.accept = 'image/*';
-      fileInput.addEventListener('change', handleFileSelect);
+      // Add capture attribute for mobile camera with timeout handling
+      if (/Mobi|Android/i.test(navigator.userAgent)) {
+        fileInput.setAttribute('capture', 'environment');
+      }
+      
+      // Add timeout for file selection to prevent hanging
+      let fileSelectionTimeout;
+      const handleFileSelectWithTimeout = function(event) {
+        clearTimeout(fileSelectionTimeout);
+        handleFileSelect(event);
+      };
+      
+      fileInput.addEventListener('change', handleFileSelectWithTimeout);
+      
+      // Set timeout to detect if camera is hanging
+      fileSelectionTimeout = setTimeout(() => {
+        console.log('File selection timeout - camera may have failed');
+        // Don't show error immediately as user might still be using camera
+      }, 30000); // 30 second timeout
       fileInput.click();
 
       // Add image compression before setting to localStorage
       function handleFileSelect(event) {
+        console.log('File selected, processing...');
         const file = event.target.files[0];
+        
+        // Handle case where user cancels camera/file selection
+        if (!file) {
+          console.log('No file selected - user may have cancelled');
+          return;
+        }
+        
         if (file && file.type.match('image.*')) {
           // Show loading indicator
           const loadingMessage = document.createElement('div');
@@ -387,6 +413,7 @@ function showUploadButton() {
           
           // Compress and resize image before storing
           compressImage(file, function(dataUrl) {
+            console.log('Image compression completed');
             if (dataUrl) {
               localStorage.setItem('userPhoto', dataUrl);
               // Remove loading indicator
@@ -399,6 +426,7 @@ function showUploadButton() {
               }, TIMEOUT);
             } else {
               // Handle compression error
+              console.log('Image compression failed');
               if (loadingMessage.parentNode) {
                 conversation.removeChild(loadingMessage);
               }
@@ -428,12 +456,15 @@ function showUploadButton() {
 
 // Add this new function to compress images
 function compressImage(file, callback) {
+  console.log('Starting image compression for file:', file.name, 'Size:', file.size);
   try {
     const reader = new FileReader();
     reader.onload = function(event) {
+      console.log('File read completed');
       try {
         const img = new Image();
         img.onload = function() {
+          console.log('Image loaded, dimensions:', img.width, 'x', img.height);
           try {
             // Create canvas to resize image
             const canvas = document.createElement('canvas');
@@ -452,6 +483,7 @@ function compressImage(file, callback) {
             
             canvas.width = width;
             canvas.height = height;
+            console.log('Canvas created, final size:', width, 'x', height);
             
             // Draw and compress image
             const ctx = canvas.getContext('2d');
@@ -459,6 +491,7 @@ function compressImage(file, callback) {
             
             // Get reduced-size data URL (0.8 quality)
             const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+            console.log('Image compression successful, data URL length:', dataUrl.length);
             callback(dataUrl);
           } catch (error) {
             console.error('Canvas processing error:', error);
@@ -466,8 +499,8 @@ function compressImage(file, callback) {
           }
         };
         
-        img.onerror = function() {
-          console.error('Image load error');
+        img.onerror = function(error) {
+          console.error('Image load error:', error);
           callback(null);
         };
         
@@ -478,8 +511,8 @@ function compressImage(file, callback) {
       }
     };
     
-    reader.onerror = function() {
-      console.error('File read error');
+    reader.onerror = function(error) {
+      console.error('File read error:', error);
       callback(null);
     };
     
