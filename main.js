@@ -57,7 +57,7 @@ function showImageResults() {
       
       // Check if user photo exists in localStorage
       function waitForUserPhoto(retries = 10) {
-        const data = localStorage.getItem('userPhoto');
+        const data = safeGetItem('userPhoto');
         if (data) {
           continueProcessing(data);
         } else if (retries > 0) {
@@ -425,7 +425,20 @@ function showUploadButton() {
           compressImage(file, function(dataUrl) {
             console.log('Image compression completed');
             if (dataUrl) {
-              localStorage.setItem('userPhoto', dataUrl);
+              
+              fileInput.addEventListener('change', () => {
+              const file = fileInput.files[0];
+              if (!file) return;
+              const reader = new FileReader();
+              reader.onload = () => {
+                const data = reader.result;
+                safeSetItem('userPhoto', data);    // try, but don't block
+                continueProcessing(data);
+              };
+              reader.readAsDataURL(file);
+               });
+
+
               // Remove loading indicator
               if (loadingMessage.parentNode) {
                 conversation.removeChild(loadingMessage);
@@ -572,6 +585,26 @@ function initPage() {
     }, TIMEOUT);
   }, TIMEOUT);
 }
+
+function safeSetItem(key, value) {
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch (err) {
+    console.warn('localStorage unavailable, falling back', err);
+    return false;
+  }
+}
+
+function safeGetItem(key) {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+
 
 // Code starts here
 initPage();
