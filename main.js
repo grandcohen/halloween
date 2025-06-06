@@ -56,7 +56,17 @@ function showImageResults() {
       console.log('1');
       
       // Check if user photo exists in localStorage
-      const userPhotoData = localStorage.getItem('userPhoto');
+      function waitForUserPhoto(retries = 10) {
+        const data = localStorage.getItem('userPhoto');
+        if (data) {
+          continueProcessing(data);
+        } else if (retries > 0) {
+          setTimeout(() => waitForUserPhoto(retries - 1), 300); // Wait and try again
+        } else {
+          showError("Photo not found after waiting.");
+        }
+      }
+
       if (!userPhotoData) {
         chatbotResponse.removeChild(messageWhileLoading);
         const errorMsg = document.createElement('div');
